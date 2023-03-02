@@ -5,6 +5,7 @@ import nc from 'next-connect'
 import db from '../../../utils/db'
 import User from '../../../models/User'
 import { createActivationToken } from '../../../utils/tokens'
+import { sendEmail } from "@/utils/sendEmails";
 function onError(err:any, req:any, res:any, next:any) {
     console.log(err);
     // OR: console.error(err);
@@ -39,7 +40,9 @@ handler.post(async (req, res, next) => {
             id: addedUser._id.toString()
         })
         const url = `${process.env.NEXT_PUBLIC_BASE_URL}/activate/${activation_token}`
-        res.status(200).send(url)
+        sendEmail(email, url, "", "Activate your account.")
+        await db.disconnectDb()
+        res.json({message: "Register success! Please activate your email to start."})
     } catch (e) { 
         next(onError(e,req,res,next));
     }

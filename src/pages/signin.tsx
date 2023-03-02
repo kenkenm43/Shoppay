@@ -11,6 +11,8 @@ import LoginInput from '@/components/inputs/loginInput'
 import CircledIconBtn from '@/components/buttons/CircledIconBtn'
 import { getProviders } from 'next-auth/react'
 import { useSession, signIn, signOut } from "next-auth/react"
+import axios from 'axios'
+import DotLoaders from '@/components/loaders/dotLoaders'
 
 
 const initialValues = {
@@ -19,13 +21,15 @@ const initialValues = {
   name: "",
   email: "",
   password: "",
-  conf_password: ""
+  conf_password: "",
+  success: "",
+  error: ""
 }
 
 export default function Signin({country, providers}:any) {
-  
+  const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(initialValues)
-  const {login_email, login_password, name, email, password, conf_password} = user
+  const {login_email, login_password, name, email, password, conf_password, success, error} = user
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {name, value} = e.target;
     setUser({...user, [name]: value})
@@ -46,13 +50,29 @@ export default function Signin({country, providers}:any) {
     password: Yup.string()
       .required("Enter a combination of at least six numbers, letters and punctuation marks(such as ! and &).")
       .min(6, "Password must be at least 6 characters.")
-      .min(36, "Password can't be more than 36 characters."),
+      .max(36, "Password can't be more than 36 characters."),
       conf_password: Yup.string()
       .required("Confirm your password.")
       .oneOf([Yup.ref("password")], "Passwords must match.")
   })
+  const signUpHandler = async () => {
+    try {
+      setLoading(true)
+      const { data } = await axios.post('/api/auth/signup', {
+        name, email, password,
+      })
+      setUser({...user,error:"", success: data.message})
+      setLoading(false)
+    } catch (error:any) {
+      setLoading(false)
+      setUser({...user,success:"", error: error.response.data.message})
+    }
+  }
   return (
     <>
+    {
+      loading && <DotLoaders loading={loading}/>
+    }
     <Header country={country}/>
       <div className={styles.login}>
         <div className={styles.login__container}>
@@ -122,7 +142,9 @@ export default function Signin({country, providers}:any) {
           name, email, password, conf_password
          }}
          validationSchema={registerValidation}
-         onSubmit={()=>{}}
+         onSubmit={()=>{
+          signUpHandler()
+         }}
          >
             {
               (form) => (
@@ -152,6 +174,8 @@ export default function Signin({country, providers}:any) {
               )
             }
         </Formik>
+          <div>{success && <span>{success}</span>}</div>
+          <div>{error && <span>{error}</span>}</div>
           </div>
         </div>
       </div>
